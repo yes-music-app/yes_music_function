@@ -1,3 +1,5 @@
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -64,3 +66,6 @@ node_modules/
 # dotenv environment variables file
 .env
 .env.yaml
+
+# service account
+service-account.json
