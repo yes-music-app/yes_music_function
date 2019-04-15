@@ -3,6 +3,10 @@
 // The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
 const functions = require('firebase-functions');
 
+// Dependencies for managing state cookies.
+const cookies = require('cookie-parser');
+const crypto = require('crypto');
+
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
 const serviceAccount = require('./service-account.json');
@@ -11,14 +15,31 @@ admin.initializeApp({
     databaseURL: "https://yesmusicapp.firebaseio.com"
 });
 
-// Take the text parameter passed to this HTTP endpoint and insert it into the
-// Realtime Database under the path /messages/:pushId/original
-exports.addMessage = functions.https.onRequest((req, res) => {
-    // Grab the text parameter.
-    const original = req.query.text;
-    // Push the new message into the Realtime Database using the Firebase Admin SDK.
-    return admin.database().ref('/messages').push({ original: original }).then((snapshot) => {
-        // Redirect with 303 SEE OTHER to the URL of the pushed object in the Firebase console.
-        return res.redirect(303, snapshot.ref.toString());
+// A Spotify wrapper to help construct Spotify requests.
+const SpotifyWebAPI = require('spotify-web-api-node');
+const spotify = new SpotifyWebAPI({
+    clientId: functions.config().spotify.client_id,
+    clientSecret = functions.config().spotify.client_secret,
+    redirectUri = functions.config().spotify.redirect_uri
+});
+
+// The authorization scopes that we will need for our operations.
+const SCOPES = [
+    'app-remote-control',
+    'user-read-private'
+]
+
+/**
+ * Requests authorization from the Spotify authorization endpoint.
+ */
+exports.requestAuth = functions.https.onRequest((req, res) => {
+    cookies()(req, res, () => {
+        // Generate a state cookie for state verification.
+        const state = req.cookies.state || crypto.randomBytes(20).toString('hex');
+        res.cookie('state', state.toString(), { maxAge: 3600000, secure: true, httpOnly: true });
+
+        // Redirect the authorization request to the Spotify authorization endpoint.
+        const authorizeURL = spotify.createAuthorizeURL(SCOPES, state.toString());
+        res.redirect(authorizeURL);
     });
 });
