@@ -65,3 +65,4 @@ node_modules/
 
 # service account
 service-account.json
+.runtimeconfig.json

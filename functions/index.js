@@ -17,10 +17,10 @@ admin.initializeApp({
 
 // A Spotify wrapper to help construct Spotify requests.
 const SpotifyWebAPI = require('spotify-web-api-node');
-const spotify = new SpotifyWebAPI({
+const Spotify = new SpotifyWebAPI({
     clientId: functions.config().spotify.client_id,
-    clientSecret = functions.config().spotify.client_secret,
-    redirectUri = functions.config().spotify.redirect_uri
+    clientSecret: functions.config().spotify.client_secret,
+    redirectUri: functions.config().spotify.redirect_uri
 });
 
 // The authorization scopes that we will need for our operations.
@@ -39,7 +39,10 @@ exports.requestAuth = functions.https.onRequest((req, res) => {
         res.cookie('state', state.toString(), { maxAge: 3600000, secure: true, httpOnly: true });
 
         // Redirect the authorization request to the Spotify authorization endpoint.
-        const authorizeURL = spotify.createAuthorizeURL(SCOPES, state.toString());
-        res.redirect(authorizeURL);
+        const authorizeURL = Spotify.createAuthorizeURL(SCOPES, state.toString());
+        res.location(authorizeURL);
+
+        // Send the response back to the client.
+        res.status(200).json({ data: authorizeURL });
     });
 });
