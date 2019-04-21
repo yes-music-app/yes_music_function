@@ -7,6 +7,10 @@ const functions = require('firebase-functions');
 const cookies = require('cookie-parser');
 const crypto = require('crypto');
 
+// Modules required to make https requests.
+const https = require('https');
+const request = require('request');
+
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
 const serviceAccount = require('./service-account.json');
@@ -44,5 +48,32 @@ exports.requestAuth = functions.https.onRequest((req, res) => {
 
         // Send the response back to the client.
         res.status(200).json({ data: authorizeURL });
+    });
+});
+
+/**
+ * Requests an access token from the Spotify token endpoint.
+ */
+exports.requestAccessToken = functions.https.onRequest((req, res) => {
+    // Generate a mapping of the parameters that should be sent to the Spotify endpoint.
+    const args = {
+        "client_id": functions.config().spotify.client_id,
+        "client_secret": functions.config().spotify.client_secret,
+        "grant_type": "authorization_code",
+        "code": req.query.code,
+        "redirect_uri": functions.config().spotify.redirect_uri
+    }
+
+    console.log(args.code);
+
+    // The url of the spotify token endpoint.
+    const baseUrl = 'https://accounts.spotify.com/api/token'
+
+    // Make a post request to the endpoint.
+    request.post(baseUrl, args, (err, formResponse, body) => {
+        console.log(err);
+        console.log(formResponse);
+        console.log(body);
+        res.status(200).json({ data: body });
     });
 });
