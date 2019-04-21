@@ -47,7 +47,7 @@ exports.requestAuth = functions.https.onRequest((req, res) => {
         res.location(authorizeURL);
 
         // Send the response back to the client.
-        res.status(200).json({ data: authorizeURL });
+        res.status(200).json({ 'data': authorizeURL });
     });
 });
 
@@ -55,25 +55,22 @@ exports.requestAuth = functions.https.onRequest((req, res) => {
  * Requests an access token from the Spotify token endpoint.
  */
 exports.requestAccessToken = functions.https.onRequest((req, res) => {
-    // Generate a mapping of the parameters that should be sent to the Spotify endpoint.
-    const args = {
-        "client_id": functions.config().spotify.client_id,
-        "client_secret": functions.config().spotify.client_secret,
-        "grant_type": "authorization_code",
-        "code": req.query.code,
-        "redirect_uri": functions.config().spotify.redirect_uri
-    }
+    // Get the auth code that was passed to this function.
+    const code = req.body.data.code;
 
-    console.log(args.code);
-
-    // The url of the spotify token endpoint.
-    const baseUrl = 'https://accounts.spotify.com/api/token'
-
-    // Make a post request to the endpoint.
-    request.post(baseUrl, args, (err, formResponse, body) => {
-        console.log(err);
-        console.log(formResponse);
-        console.log(body);
-        res.status(200).json({ data: body });
-    });
+    // Make the request to the Spotify endpoint.
+    Spotify.authorizationCodeGrant(code).then(
+        (data) => {
+            // Return the retrieved codes.
+            return res.status(200).json({ 'data': data.body });
+        },
+        (err) => {
+            if (err) {
+                res.status(400).end();
+            }
+        }).catch((err) => {
+            if (err) {
+                res.status(400).end();
+            }
+        });
 });
