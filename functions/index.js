@@ -7,10 +7,6 @@ const functions = require('firebase-functions');
 const cookies = require('cookie-parser');
 const crypto = require('crypto');
 
-// Modules required to make https requests.
-const https = require('https');
-const request = require('request');
-
 // The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
 const serviceAccount = require('./service-account.json');
@@ -65,12 +61,38 @@ exports.requestAccessToken = functions.https.onRequest((req, res) => {
             return res.status(200).json({ 'data': data.body });
         },
         (err) => {
-            if (err) {
-                res.status(400).end();
-            }
+            err && console.log(err);
+            res.status(400).end();
         }).catch((err) => {
-            if (err) {
-                res.status(400).end();
-            }
+            err && console.log(err);
+            res.status(400).end();
+        });
+});
+
+/**
+ * Fetches a refreshed access token.
+ */
+exports.refreshAccessToken = functions.https.onRequest((req, res) => {
+    // Get the refresh token that was passed to this function.
+    const token = req.body.data.token;
+
+    // Set the refresh token to the received refresh token.
+    Spotify.setRefreshToken(token);
+
+    // Make the request to the Spotify endpoint.
+    Spotify.refreshAccessToken().then(
+        (data) => {
+            // Reset the refresh token.
+            Spotify.setRefreshToken(null);
+
+            // Return the retrieved codes.
+            return res.status(200).json({ 'data': data.body });
+        },
+        (err) => {
+            err && console.log(err);
+            res.status(400).end();
+        }).catch((err) => {
+            err && console.log(err);
+            res.status(400).end();
         });
 });
